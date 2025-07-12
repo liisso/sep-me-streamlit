@@ -94,31 +94,17 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-def main():
-    # 세션 상태 초기화
-    initialize_session_state()
+def show_sidebar():
+    """사이드바 표시"""
+    st.sidebar.title("📊 진행 현황")
     
-    # 사이드바
-    show_sidebar()
+    # 관리자 모드 버튼 추가
+    if st.sidebar.button("🔧 관리자 모드"):
+        st.session_state.stage = 'admin'
+        st.rerun()
     
-    # 메인 헤더
-    st.markdown("""
-    <div class="main-header">
-        <h1>🎯 SEP ME ver.6</h1>
-        <h3>학생 글 채점 연습 프로그램</h3>
-        <p>AI 기반 학습 도구로 채점 실력을 향상시켜보세요!</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # 단계별 렌더링
-    if st.session_state.stage == 'intro':
-        show_intro_page()
-    elif st.session_state.stage == 'practice1':
-        show_practice1_page()
-    elif st.session_state.stage == 'practice2':
-        show_practice2_page()
-    elif st.session_state.stage == 'results':
-        show_results_page()
+    # 기존 코드...
+
 
 def initialize_session_state():
     """세션 상태 초기화"""
@@ -137,7 +123,11 @@ def initialize_session_state():
 def show_sidebar():
     """사이드바 표시"""
     st.sidebar.title("📊 진행 현황")
-    
+     # 관리자 모드 버튼 추가
+    if st.sidebar.button("🔧 관리자 모드"):
+        st.session_state.stage = 'admin'
+        st.rerun()
+        
     if st.session_state.user_name:
         st.sidebar.success(f"👋 {st.session_state.user_name}님")
         st.sidebar.info(f"📚 레벨: {st.session_state.user_level}")
@@ -601,6 +591,67 @@ def show_results_page():
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
+            
+def show_admin_page():
+    """관리자 데이터 관리 페이지"""
+    st.title("📊 관리자 - 학생 글 데이터 관리")
+    
+    # 뒤로가기 버튼
+    if st.button("← 메인으로 돌아가기"):
+        st.session_state.stage = 'intro'
+        st.rerun()
+    
+    st.markdown("---")
+    
+    # 비밀번호 확인
+    password = st.text_input("관리자 비밀번호", type="password")
+    
+    if password == "admin123":  # 간단한 비밀번호
+        st.success("관리자 로그인 성공!")
+        
+        # 파일 업로드 섹션
+        st.markdown("### 📁 학생 글 데이터 업로드")
+        
+        uploaded_file = st.file_uploader(
+            "CSV 파일을 업로드하세요",
+            type=['csv'],
+            help="학생 글 데이터가 포함된 CSV 파일을 선택하세요"
+        )
+        
+        if uploaded_file is not None:
+            # 업로드된 파일 미리보기
+            df = pd.read_csv(uploaded_file)
+            st.write("**업로드된 데이터 미리보기:**")
+            st.dataframe(df.head())
+            
+            # 데이터 검증
+            required_columns = ['id', 'text', 'correct_grade', 'content_score', 'organization_score', 'expression_score']
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            
+            if missing_columns:
+                st.error(f"필수 컬럼이 누락되었습니다: {missing_columns}")
+                st.info("필요한 컬럼: id, text, correct_grade, content_score, organization_score, expression_score")
+            else:
+                st.success("✅ 데이터 형식이 올바릅니다!")
+                
+                if st.button("데이터 저장", type="primary"):
+                    # 세션 상태에 데이터 저장
+                    st.session_state.uploaded_data = df.to_dict('records')
+                    st.success(f"✅ {len(df)}개의 학생 글 데이터가 저장되었습니다!")
+                    
+        # 현재 저장된 데이터 확인
+        if 'uploaded_data' in st.session_state:
+            st.markdown("### 📋 현재 저장된 데이터")
+            st.write(f"총 {len(st.session_state.uploaded_data)}개의 학생 글이 저장되어 있습니다.")
+            
+            if st.button("저장된 데이터 초기화"):
+                del st.session_state.uploaded_data
+                st.success("데이터가 초기화되었습니다.")
+                st.rerun()
+    
+    elif password:
+        st.error("비밀번호가 틀렸습니다.")
+
 
 if __name__ == "__main__":
     main()
