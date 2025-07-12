@@ -655,4 +655,3 @@ def show_admin_page():
 
 if __name__ == "__main__":
     main()
-        main()
